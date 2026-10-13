@@ -30,6 +30,11 @@ const ENCODED_IMAGE_PNG: &[u8] = &[
 ];
 const LIVE_EVENT_TIMEOUT_TICKS: usize = 500;
 const LIVE_QUIET_TICKS: usize = 50;
+/// ListView row counts for the rows check: rows leave and join in bulk, as when a filter changes.
+const LIST_ROW_COUNTS: [usize; 40] = [
+    31, 29, 40, 29, 32, 41, 39, 36, 47, 50, 44, 34, 44, 39, 46, 35, 46, 53, 55, 52, 46, 38, 49, 52,
+    55, 61, 50, 44, 36, 27, 21, 13, 18, 20, 30, 37, 41, 46, 44, 49,
+];
 
 struct Fixture {
     boundary_host: reactor::ComponentHost<reactor::native::WinUiAdapter>,
@@ -45,6 +50,9 @@ struct Fixture {
     retirement_expected_order: Vec<reactor::ObjectId>,
     retirement_started: bool,
     retirement_verified: bool,
+    list_rows_runtime: Option<reactor::Runtime<reactor::native::WinUiAdapter>>,
+    list_rows_window: Option<reactor::native::NativeWindow>,
+    list_rows_step: usize,
     content_dialog_runtime: Option<reactor::Runtime<reactor::native::WinUiAdapter>>,
     content_dialog_window: Option<reactor::native::NativeWindow>,
     content_dialog: Option<reactor::ObjectId>,
@@ -512,6 +520,22 @@ impl Fixture {
         context.spawn_background(|_| {
             std::thread::sleep(Duration::from_millis(20));
         });
+    }
+
+    /// A ListView whose rows show their index and the update they were declared in.
+    fn list_rows(count: usize, generation: usize) -> reactor::ListView {
+        reactor::ListView::new().items((0..count).map(|row| {
+            reactor::DataItem::new(row.to_string(), format!("Row {row}")).content(
+                reactor::StackPanel::new().children(vec![
+                    reactor::TextBlock::new()
+                        .text(format!("Sender {row}.{generation}"))
+                        .into(),
+                    reactor::TextBlock::new()
+                        .text(format!("Subject {row}.{generation}"))
+                        .into(),
+                ]),
+            )
+        }))
     }
 
     fn retirement_children(reversed: bool, include_retiring: bool) -> reactor::Grid {
@@ -2888,6 +2912,9 @@ impl reactor::Component for Fixture {
             retirement_expected_order,
             retirement_started: false,
             retirement_verified: false,
+            list_rows_runtime: None,
+            list_rows_window: None,
+            list_rows_step: 0,
             content_dialog_runtime: None,
             content_dialog_window: None,
             content_dialog: None,
@@ -2999,6 +3026,51 @@ impl reactor::Component for Fixture {
                 Self::schedule(context);
                 return;
             }
+        }
+        if self.list_rows_step <= LIST_ROW_COUNTS.len() {
+            if self.list_rows_runtime.is_none() {
+                let mut runtime = reactor::Runtime::new(reactor::native::WinUiAdapter::default());
+                runtime.update(Self::list_rows(40, 0)).unwrap();
+                let root = runtime.graph().root().unwrap();
+                let window = runtime.adapter().create_window(root).unwrap();
+                window.activate().unwrap();
+                self.list_rows_runtime = Some(runtime);
+                self.list_rows_window = Some(window);
+                Self::schedule(context);
+                return;
+            }
+            let runtime = self.list_rows_runtime.as_mut().unwrap();
+            let list = runtime.graph().root().unwrap();
+            // Each update is checked a tick later: WinUI realizes and recycles row containers as
+            // it renders, so no row may show the content or text of another row then.
+            if self.list_rows_step > 0 {
+                let generation = self.list_rows_step;
+                let rows = runtime.adapter().list_view_row_texts(list).unwrap();
+                assert!(!rows.is_empty());
+                for (row, texts) in rows {
+                    assert_eq!(
+                        texts,
+                        [
+                            format!("Sender {row}.{generation}"),
+                            format!("Subject {row}.{generation}")
+                        ],
+                        "ListView row {row} after update {generation}"
+                    );
+                }
+            }
+            if self.list_rows_step < LIST_ROW_COUNTS.len() {
+                let count = LIST_ROW_COUNTS[self.list_rows_step];
+                self.list_rows_step += 1;
+                runtime
+                    .update(Self::list_rows(count, self.list_rows_step))
+                    .unwrap();
+                Self::schedule(context);
+                return;
+            }
+            runtime.adapter().validate_graph(runtime.graph()).unwrap();
+            self.list_rows_window.take().unwrap().close().unwrap();
+            self.list_rows_runtime = None;
+            self.list_rows_step += 1;
         }
         if self.content_dialog_runtime.is_none() {
             let dialog_result = Rc::clone(&self.content_dialog_result);

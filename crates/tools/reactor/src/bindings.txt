@@ -127,7 +127,8 @@ Microsoft::UI::Xaml::Controls::IInfoBar::{add_Closed, put_IsClosable, put_IsOpen
 Microsoft::UI::Xaml::Controls::IInfoBarStatics::{get_IsClosableProperty, get_IsOpenProperty, get_MessageProperty, get_SeverityProperty, get_TitleProperty}
 Microsoft::UI::Xaml::Controls::IItemContainer::{get_IsSelected, put_IsSelected}
 Microsoft::UI::Xaml::Controls::IItemContainerStatics::get_IsSelectedProperty
-Microsoft::UI::Xaml::Controls::IItemsControl::{get_Items, put_ItemsSource, put_ItemTemplate}
+Microsoft::UI::Xaml::Controls::IItemContainerMapping::ContainerFromIndex
+Microsoft::UI::Xaml::Controls::IItemsControl::{get_Items, put_ItemsSource}
 Microsoft::UI::Xaml::Controls::IItemsControlStatics::get_ItemsSourceProperty
 Microsoft::UI::Xaml::Controls::IItemsRepeater::{GetOrCreateElement, put_ItemsSource, put_ItemTemplate}
 Microsoft::UI::Xaml::Controls::IListViewBase::{add_DragItemsCompleted, get_CanDragItems, get_CanReorderItems, get_SelectionMode, put_CanDragItems, put_CanReorderItems, put_SelectionMode, remove_DragItemsCompleted}
@@ -393,6 +394,7 @@ Microsoft::UI::Xaml::Media::MicaBackdrop::CreateInstance
 Microsoft::UI::Xaml::Media::SolidColorBrush::CreateInstance
 Microsoft::UI::Xaml::Media::Stretch
 Microsoft::UI::Xaml::Media::SystemBackdrop::{}
+Microsoft::UI::Xaml::Media::VisualTreeHelper::{GetChild, GetChildrenCount}
 Microsoft::UI::Xaml::ResourceDictionary::{}
 Microsoft::UI::Xaml::ScalarTransition::CreateInstance
 Microsoft::UI::Xaml::Shapes::Ellipse::CreateInstance

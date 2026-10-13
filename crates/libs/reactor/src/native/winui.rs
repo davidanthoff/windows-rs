@@ -9,7 +9,15 @@ enum Handle {
     TreeView(NativeTreeView),
     TreeNode(NativeTreeNode),
     ListView(NativeListView),
-    Data(IObservableMap<HSTRING, IInspectable>),
+    Data(NativeDataItem),
+}
+
+/// A `ListView` row. Each row is its own `ListViewItem` container, so WinUI never recycles a
+/// container between rows and a row's content element is never needed by two containers at once.
+struct NativeDataItem {
+    value: native::IContentControl,
+    text: HSTRING,
+    content: Option<ObjectId>,
 }
 
 struct NativeListView {
@@ -1633,9 +1641,6 @@ pub struct WinUiAdapter {
     released_images: Vec<Rc<NativeImageSource>>,
     owners: HashMap<ObjectId, (ObjectId, RelationId)>,
     tree_template: Option<native::DataTemplate>,
-    list_template: Option<native::DataTemplate>,
-    data_content_key: HSTRING,
-    data_text_key: HSTRING,
     event_queue: Rc<NativeEventQueue>,
     retirements: HashMap<ObjectId, NativeRetirement>,
     virtual_items: HashMap<ObjectId, NativeVirtualItems>,
@@ -1675,9 +1680,6 @@ impl Default for WinUiAdapter {
             released_images: Vec::new(),
             owners: HashMap::new(),
             tree_template: None,
-            list_template: None,
-            data_content_key: HSTRING::from("Content"),
-            data_text_key: HSTRING::from("Text"),
             event_queue: Rc::new(NativeEventQueue::default()),
             retirements: HashMap::new(),
             virtual_items: HashMap::new(),

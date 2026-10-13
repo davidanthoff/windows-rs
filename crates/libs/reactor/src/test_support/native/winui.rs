@@ -101,12 +101,7 @@ impl WinUiAdapter {
                         _ => None,
                     })
                     .unwrap_or_default();
-                let properties = value.cast::<IMap<HSTRING, IInspectable>>()?;
-                let actual = properties.Lookup(&self.data_text_key)?;
-                let actual = actual
-                    .cast::<windows_reference::IReference<HSTRING>>()?
-                    .Value()?;
-                if actual != expected {
+                if value.text != expected {
                     return Err(WinUiError::StateMismatch(object));
                 }
             }
@@ -669,6 +664,50 @@ impl WinUiAdapter {
                 }),
                 value,
             );
+        }
+        Ok(())
+    }
+
+    /// The text of each realized `ListView` row as WinUI renders it: the `TextBlock` texts in the
+    /// row container's visual tree, by row index. Lays the list out first.
+    pub fn list_view_row_texts(
+        &self,
+        object: ObjectId,
+    ) -> Result<Vec<(usize, Vec<String>)>, WinUiError> {
+        let Some(Handle::ListView(list)) = self.handles.get(&object) else {
+            return Err(WinUiError::InvalidObject(object));
+        };
+        list.value.cast::<native::IUIElement>()?.UpdateLayout()?;
+        let mapping = list.value.cast::<native::IItemContainerMapping>()?;
+        let count = list
+            .value
+            .cast::<native::IItemsControl>()?
+            .Items()?
+            .Size()?;
+        let mut rows = Vec::new();
+        for index in 0..count {
+            let container = match mapping.ContainerFromIndex(index as i32) {
+                Ok(container) => container,
+                // Not realized.
+                Err(error) if error.code().is_ok() => continue,
+                Err(error) => return Err(error.into()),
+            };
+            let mut texts = Vec::new();
+            Self::collect_texts(&container, &mut texts)?;
+            rows.push((index as usize, texts));
+        }
+        Ok(rows)
+    }
+
+    fn collect_texts(
+        element: &native::DependencyObject,
+        texts: &mut Vec<String>,
+    ) -> Result<(), WinUiError> {
+        if let Ok(text) = element.cast::<native::TextBlock>() {
+            texts.push(text.Text()?);
+        }
+        for index in 0..native::VisualTreeHelper::GetChildrenCount(element)? {
+            Self::collect_texts(&native::VisualTreeHelper::GetChild(element, index)?, texts)?;
         }
         Ok(())
     }

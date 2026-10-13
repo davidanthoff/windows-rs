@@ -98,9 +98,6 @@ impl WinUiAdapter {
                 }
                 ObjectType::ListView => {
                     let value = native::ListView::new()?;
-                    value
-                        .cast::<native::IItemsControl>()?
-                        .SetItemTemplate(&self.list_template()?)?;
                     let selection_changed =
                         Rc::new(RefCell::new(NativeSelectionIndexEvent::default()));
                     let selection_event = Rc::clone(&selection_changed);
@@ -167,10 +164,11 @@ impl WinUiAdapter {
                         _drag_items_completed,
                     })
                 }
-                ObjectType::DataItem => {
-                    let values = BTreeMap::<HSTRING, Option<IInspectable>>::new();
-                    Handle::Data(values.into())
-                }
+                ObjectType::DataItem => Handle::Data(NativeDataItem {
+                    value: native::ListViewItem::new()?.cast()?,
+                    text: HSTRING::new(),
+                    content: None,
+                }),
                 _ => unreachable!("generated object was not created"),
             }
         };
@@ -625,6 +623,12 @@ impl WinUiAdapter {
                         parent.value.SetContent(&content)?;
                         parent.content = None;
                     }
+                    (Handle::Data(parent), RelationId::Content) => {
+                        let content: IInspectable =
+                            windows_reference::IReference::from(parent.text.clone()).into();
+                        parent.value.SetContent(&content)?;
+                        parent.content = None;
+                    }
                     _ => return Err(WinUiError::InvalidRelation(parent, relation)),
                 }
                 None
@@ -661,6 +665,10 @@ impl WinUiAdapter {
                         .ok_or(WinUiError::InvalidRelation(parent, relation))??;
                 }
                 (Handle::TreeNode(parent), RelationId::Content) => {
+                    parent.value.SetContent(&replacement)?;
+                    parent.content = Some(object);
+                }
+                (Handle::Data(parent), RelationId::Content) => {
                     parent.value.SetContent(&replacement)?;
                     parent.content = Some(object);
                 }
