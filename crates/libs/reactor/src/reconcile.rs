@@ -3440,23 +3440,39 @@ impl Planner<'_, '_> {
             )?;
         }
         let properties = declaration.properties.as_slice();
+        // A selection index can refer to a child added in this update, so an object with child
+        // collections gets its new selection after its children.
+        let mut selection = Vec::new();
         if self.retained.get(object).unwrap().properties.as_slice() != properties {
             let previous = self.retained.get(object).unwrap().properties.clone();
-            let set = properties
+            let mut set = properties
                 .iter()
                 .filter(|property| {
                     previous.iter().find(|current| current.id == property.id) != Some(*property)
                 })
                 .cloned()
-                .collect::<Rc<[_]>>();
+                .collect::<Vec<_>>();
+            if relation_contracts(declaration.kind)
+                .iter()
+                .any(|contract| contract.cardinality == Cardinality::Many)
+            {
+                (selection, set) = set.into_iter().partition(|property| {
+                    matches!(property.value, PropertyValue::SelectionIndex(_))
+                });
+            }
             let clear = previous
                 .iter()
                 .filter(|property| !properties.iter().any(|current| current.id == property.id))
                 .map(|property| property.id)
                 .collect::<Rc<[_]>>();
             self.retained.get_mut(object).properties = declaration.properties.clone();
-            self.mutations
-                .push(Mutation::SetProperties { object, set, clear });
+            if !set.is_empty() || !clear.is_empty() {
+                self.mutations.push(Mutation::SetProperties {
+                    object,
+                    set: set.into(),
+                    clear,
+                });
+            }
         }
         let events = declaration.events.as_slice();
         if retained_events(&self.retained.get(object).unwrap().events) != events {
@@ -3483,6 +3499,13 @@ impl Planner<'_, '_> {
         self.reconcile_virtual_items(object, declaration)?;
         for contract in relation_contracts(declaration.kind) {
             self.reconcile_relation(object, declaration, contract)?;
+        }
+        if !selection.is_empty() {
+            self.mutations.push(Mutation::SetProperties {
+                object,
+                set: selection.into(),
+                clear: Rc::default(),
+            });
         }
         Ok(object)
     }

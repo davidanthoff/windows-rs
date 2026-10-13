@@ -264,6 +264,32 @@ fn container_generated_data_uses_the_same_keyed_relation_reconciler() {
 }
 
 #[test]
+fn selection_index_is_applied_after_the_children_it_can_refer_to() {
+    let list = |count: usize, selected: usize| {
+        ListView::new()
+            .items((0..count).map(|row| DataItem::new(row, format!("Row {row}"))))
+            .selected_index(Some(selected))
+    };
+    let mut runtime = Runtime::new(RecordingAdapter::default());
+    runtime.update(list(5, 4)).unwrap();
+
+    let mutations = runtime.update(list(6, 5)).unwrap();
+
+    let insert = mutations
+        .iter()
+        .position(|mutation| matches!(mutation, Mutation::Insert { .. }))
+        .unwrap();
+    let selection = mutations
+        .iter()
+        .position(|mutation| {
+            matches!(mutation, Mutation::SetProperties { set, .. }
+                if set.iter().any(|property| property.id == PropertyId::SelectedIndex))
+        })
+        .unwrap();
+    assert!(insert < selection);
+}
+
+#[test]
 fn owned_content_replacement_uses_generic_relation_mutations() {
     let mut runtime = Runtime::new(RecordingAdapter::default());
     runtime
