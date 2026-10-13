@@ -1433,6 +1433,26 @@ impl reactor::Component for Fixture {
             .adapter()
             .validate_graph(list_runtime.graph())
             .unwrap();
+        // The selection can move to a row added in the same update.
+        let selected_rows = |count: usize, selected: usize| {
+            reactor::ListView::new()
+                .items(
+                    (0..count)
+                        .map(|row| reactor::DataItem::new(row.to_string(), format!("Row {row}"))),
+                )
+                .selected_index(Some(selected))
+        };
+        list_runtime.update(selected_rows(3, 2)).unwrap();
+        list_runtime.update(selected_rows(4, 3)).unwrap();
+        list_runtime.update(selected_rows(20, 19)).unwrap();
+        assert_eq!(
+            list_runtime.adapter().list_view_state(list).unwrap().0,
+            Some(19)
+        );
+        list_runtime
+            .adapter()
+            .validate_graph(list_runtime.graph())
+            .unwrap();
         let first_tree_values = Rc::new(RefCell::new(Vec::new()));
         let first_tree_callback = Rc::clone(&first_tree_values);
         let mut tree_runtime = reactor::Runtime::new(reactor::native::WinUiAdapter::default());
