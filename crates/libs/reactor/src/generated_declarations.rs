@@ -1889,13 +1889,6 @@ impl TextBox {
         );
         Self(declaration)
     }
-    pub fn placeholder_text(mut self, placeholder_text: impl AsRef<str>) -> Self {
-        self.0 = self.0.property(
-            PropertyId::PlaceholderText,
-            PropertyValue::String(Rc::from(placeholder_text.as_ref())),
-        );
-        self
-    }
     pub fn accepts_return(mut self, accepts_return: bool) -> Self {
         self.0 = self.0.property(
             PropertyId::AcceptsReturn,
@@ -1907,6 +1900,13 @@ impl TextBox {
         self.0 = self
             .0
             .property(PropertyId::TextWrapping, text_wrapping.property_value());
+        self
+    }
+    pub fn placeholder_text(mut self, placeholder_text: impl AsRef<str>) -> Self {
+        self.0 = self.0.property(
+            PropertyId::PlaceholderText,
+            PropertyValue::String(Rc::from(placeholder_text.as_ref())),
+        );
         self
     }
     pub fn background(mut self, background: impl Into<Brush>) -> Self {

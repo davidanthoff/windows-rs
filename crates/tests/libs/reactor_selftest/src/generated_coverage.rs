@@ -183,22 +183,22 @@ pub fn cases() -> Vec<CoverageCase> {
             clear: coverage_34_clear,
         },
         CoverageCase {
-            contract: "TextBox.Text",
+            contract: "TextBox.AcceptsReturn",
             set: coverage_35_set,
             clear: coverage_35_clear,
         },
         CoverageCase {
-            contract: "TextBox.PlaceholderText",
+            contract: "TextBox.TextWrapping",
             set: coverage_36_set,
             clear: coverage_36_clear,
         },
         CoverageCase {
-            contract: "TextBox.AcceptsReturn",
+            contract: "TextBox.Text",
             set: coverage_37_set,
             clear: coverage_37_clear,
         },
         CoverageCase {
-            contract: "TextBox.TextWrapping",
+            contract: "TextBox.PlaceholderText",
             set: coverage_38_set,
             clear: coverage_38_clear,
         },
@@ -1855,27 +1855,27 @@ fn coverage_34_clear() -> View {
     TextBlock::new().into()
 }
 fn coverage_35_set() -> View {
-    TextBox::new("Text").into()
+    TextBox::new("Text").accepts_return(true).into()
 }
 fn coverage_35_clear() -> View {
     TextBox::new("Text").into()
 }
 fn coverage_36_set() -> View {
-    TextBox::new("Text").placeholder_text("coverage").into()
+    TextBox::new("Text")
+        .text_wrapping(TextWrapping::Wrap)
+        .into()
 }
 fn coverage_36_clear() -> View {
     TextBox::new("Text").into()
 }
 fn coverage_37_set() -> View {
-    TextBox::new("Text").accepts_return(true).into()
+    TextBox::new("Text").into()
 }
 fn coverage_37_clear() -> View {
     TextBox::new("Text").into()
 }
 fn coverage_38_set() -> View {
-    TextBox::new("Text")
-        .text_wrapping(TextWrapping::Wrap)
-        .into()
+    TextBox::new("Text").placeholder_text("coverage").into()
 }
 fn coverage_38_clear() -> View {
     TextBox::new("Text").into()

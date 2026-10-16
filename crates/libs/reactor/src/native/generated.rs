@@ -4076,30 +4076,6 @@ impl GeneratedHandle {
         value: Option<&PropertyValue>,
     ) -> Option<Result<(), WinUiError>> {
         match (kind, property, value) {
-            (ObjectType::TextBox, PropertyId::PlaceholderText, None) => Some(
-                element
-                    .cast::<native::IDependencyObject>()
-                    .map_err(Into::into)
-                    .and_then(|object| {
-                        native::TextBox::PlaceholderTextProperty()
-                            .map_err(Into::into)
-                            .and_then(|property| object.ClearValue(&property).map_err(Into::into))
-                    }),
-            ),
-            (
-                ObjectType::TextBox,
-                PropertyId::PlaceholderText,
-                Some(PropertyValue::String(value)),
-            ) => Some(
-                element
-                    .cast::<native::ITextBox>()
-                    .map_err(Into::into)
-                    .and_then(|object| {
-                        object
-                            .SetPlaceholderText(value.as_ref())
-                            .map_err(Into::into)
-                    }),
-            ),
             (ObjectType::TextBox, PropertyId::AcceptsReturn, None) => Some(
                 element
                     .cast::<native::IDependencyObject>()
@@ -4147,6 +4123,30 @@ impl GeneratedHandle {
                                 "WrapWholeWords" => native::TextWrapping::WrapWholeWords,
                                 _ => unreachable!("validated enum variant"),
                             })
+                            .map_err(Into::into)
+                    }),
+            ),
+            (ObjectType::TextBox, PropertyId::PlaceholderText, None) => Some(
+                element
+                    .cast::<native::IDependencyObject>()
+                    .map_err(Into::into)
+                    .and_then(|object| {
+                        native::TextBox::PlaceholderTextProperty()
+                            .map_err(Into::into)
+                            .and_then(|property| object.ClearValue(&property).map_err(Into::into))
+                    }),
+            ),
+            (
+                ObjectType::TextBox,
+                PropertyId::PlaceholderText,
+                Some(PropertyValue::String(value)),
+            ) => Some(
+                element
+                    .cast::<native::ITextBox>()
+                    .map_err(Into::into)
+                    .and_then(|object| {
+                        object
+                            .SetPlaceholderText(value.as_ref())
                             .map_err(Into::into)
                     }),
             ),

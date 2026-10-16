@@ -1151,14 +1151,6 @@ pub fn property_contract(kind: ObjectType, id: PropertyId) -> Option<PropertyCon
             id,
             value: ValueType::I32,
         }),
-        (ObjectType::TextBox, PropertyId::Text) => Some(PropertyContract {
-            id,
-            value: ValueType::String,
-        }),
-        (ObjectType::TextBox, PropertyId::PlaceholderText) => Some(PropertyContract {
-            id,
-            value: ValueType::String,
-        }),
         (ObjectType::TextBox, PropertyId::AcceptsReturn) => Some(PropertyContract {
             id,
             value: ValueType::Bool,
@@ -1169,6 +1161,14 @@ pub fn property_contract(kind: ObjectType, id: PropertyId) -> Option<PropertyCon
                 kind: "TextWrapping",
                 variants: &["NoWrap", "Wrap", "WrapWholeWords"],
             },
+        }),
+        (ObjectType::TextBox, PropertyId::Text) => Some(PropertyContract {
+            id,
+            value: ValueType::String,
+        }),
+        (ObjectType::TextBox, PropertyId::PlaceholderText) => Some(PropertyContract {
+            id,
+            value: ValueType::String,
         }),
         (ObjectType::TextBox, PropertyId::Background) => Some(PropertyContract {
             id,
@@ -2350,10 +2350,10 @@ pub(crate) fn property_order(kind: ObjectType, id: PropertyId) -> usize {
         (ObjectType::TextBlock, PropertyId::IsTextSelectionEnabled) => 32,
         (ObjectType::TextBlock, PropertyId::TextTrimming) => 33,
         (ObjectType::TextBlock, PropertyId::MaxLines) => 34,
-        (ObjectType::TextBox, PropertyId::Text) => 26,
-        (ObjectType::TextBox, PropertyId::PlaceholderText) => 27,
-        (ObjectType::TextBox, PropertyId::AcceptsReturn) => 28,
-        (ObjectType::TextBox, PropertyId::TextWrapping) => 29,
+        (ObjectType::TextBox, PropertyId::AcceptsReturn) => 26,
+        (ObjectType::TextBox, PropertyId::TextWrapping) => 27,
+        (ObjectType::TextBox, PropertyId::Text) => 28,
+        (ObjectType::TextBox, PropertyId::PlaceholderText) => 29,
         (ObjectType::TextBox, PropertyId::Background) => 30,
         (ObjectType::TextBox, PropertyId::BorderBrush) => 31,
         (ObjectType::TextBox, PropertyId::BorderThickness) => 32,
