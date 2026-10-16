@@ -417,14 +417,6 @@ fn text_box_appearance_records_set_and_clear() {
         runtime.graph().properties(text_box).unwrap(),
         [
             Property {
-                id: PropertyId::Text,
-                value: PropertyValue::String(Rc::from("Text")),
-            },
-            Property {
-                id: PropertyId::PlaceholderText,
-                value: PropertyValue::String(Rc::from("Enter text")),
-            },
-            Property {
                 id: PropertyId::AcceptsReturn,
                 value: PropertyValue::Bool(true),
             },
@@ -434,6 +426,14 @@ fn text_box_appearance_records_set_and_clear() {
                     kind: "TextWrapping",
                     variant: "Wrap",
                 },
+            },
+            Property {
+                id: PropertyId::Text,
+                value: PropertyValue::String(Rc::from("Text")),
+            },
+            Property {
+                id: PropertyId::PlaceholderText,
+                value: PropertyValue::String(Rc::from("Enter text")),
             },
         ]
     );
@@ -446,9 +446,9 @@ fn text_box_appearance_records_set_and_clear() {
     assert_eq!(
         clear.as_ref(),
         [
-            PropertyId::PlaceholderText,
             PropertyId::AcceptsReturn,
             PropertyId::TextWrapping,
+            PropertyId::PlaceholderText,
         ]
     );
 }
@@ -1030,5 +1030,51 @@ fn generated_controls_cover_distinct_native_value_and_relation_shapes() {
             id: PropertyId::Text,
             value: PropertyValue::String(Rc::from("Scrollable canvas")),
         }]
+    );
+}
+
+#[test]
+fn text_box_accepts_return_before_its_text() {
+    // A TextBox that does not accept returns keeps only the first line of a multi-line Text, so
+    // AcceptsReturn (and TextWrapping) must reach it first: when it is created, and when both
+    // change in one update.
+    let set_ids = |mutations: &[Mutation]| -> Vec<PropertyId> {
+        mutations
+            .iter()
+            .find_map(|mutation| match mutation {
+                Mutation::SetProperties { set, .. } => {
+                    Some(set.iter().map(|property| property.id).collect())
+                }
+                _ => None,
+            })
+            .expect("expected property mutation")
+    };
+    let mut runtime = Runtime::new(RecordingAdapter::default());
+    let mutations = runtime
+        .update(
+            TextBox::new("Dear Chahak,\n\nThank you.")
+                .placeholder_text("Message")
+                .text_wrapping(TextWrapping::Wrap)
+                .accepts_return(true),
+        )
+        .unwrap();
+    assert_eq!(
+        set_ids(mutations.as_slice()),
+        [
+            PropertyId::AcceptsReturn,
+            PropertyId::TextWrapping,
+            PropertyId::Text,
+            PropertyId::PlaceholderText,
+        ]
+    );
+
+    let mut runtime = Runtime::new(RecordingAdapter::default());
+    runtime.update(TextBox::new("one line")).unwrap();
+    let mutations = runtime
+        .update(TextBox::new("two\nlines").accepts_return(true))
+        .unwrap();
+    assert_eq!(
+        set_ids(mutations.as_slice()),
+        [PropertyId::AcceptsReturn, PropertyId::Text]
     );
 }
