@@ -28137,6 +28137,7 @@ pub const SW_HIDE: i32 = 0;
 pub const SW_RESTORE: i32 = 9;
 pub const SW_SHOWMAXIMIZED: i32 = 3;
 pub const SW_SHOWMINIMIZED: i32 = 2;
+pub const SW_SHOWMINNOACTIVE: i32 = 7;
 pub const SW_SHOWNORMAL: i32 = 1;
 #[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]

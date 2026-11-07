@@ -171,6 +171,7 @@ pub struct WindowPolicy {
     pub(crate) theme: WindowTheme,
     pub(crate) client_size: Option<(f64, f64)>,
     pub(crate) minimum_client_size: Option<(f64, f64)>,
+    pub(crate) open_in_background: bool,
 }
 
 impl WindowPolicy {
@@ -197,6 +198,17 @@ impl WindowPolicy {
     pub fn minimum_client_size(mut self, width: f64, height: f64) -> Self {
         validate_window_size(width, height);
         self.minimum_client_size = Some((width, height));
+        self
+    }
+
+    /// Opens the window minimized and without activating it, so that it neither comes to the
+    /// front nor takes keyboard focus from the window the user is working in.
+    ///
+    /// Only the first show is affected. A later activation, or restoring the window from the
+    /// taskbar, activates it as usual. Useful for automated runs that drive the window through
+    /// UI Automation while someone else uses the desktop.
+    pub fn open_in_background(mut self) -> Self {
+        self.open_in_background = true;
         self
     }
 }

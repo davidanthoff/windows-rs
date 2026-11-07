@@ -247,6 +247,7 @@ impl WinUiAdapter {
             shown: Cell::new(false),
             closed: Cell::new(false),
             maximize_on_first_show: Cell::new(false),
+            open_in_background: Cell::new(policy.open_in_background),
             placement_callback: RefCell::new(None),
             last_placement: Cell::new(None),
         });
