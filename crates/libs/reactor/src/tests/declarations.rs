@@ -611,7 +611,12 @@ fn text_box_appearance_records_set_and_clear() {
 
     assert_eq!(
         runtime.graph().properties(text_box).unwrap(),
+        // AcceptsReturn applies before Text, or WinUI drops all but the first line.
         [
+            Property {
+                id: PropertyId::AcceptsReturn,
+                value: PropertyValue::Bool(true),
+            },
             Property {
                 id: PropertyId::Text,
                 value: PropertyValue::String(Rc::from("Text")),
@@ -619,10 +624,6 @@ fn text_box_appearance_records_set_and_clear() {
             Property {
                 id: PropertyId::PlaceholderText,
                 value: PropertyValue::String(Rc::from("Enter text")),
-            },
-            Property {
-                id: PropertyId::AcceptsReturn,
-                value: PropertyValue::Bool(true),
             },
             Property {
                 id: PropertyId::TextWrapping,
@@ -642,8 +643,8 @@ fn text_box_appearance_records_set_and_clear() {
     assert_eq!(
         clear.as_ref(),
         [
-            PropertyId::PlaceholderText,
             PropertyId::AcceptsReturn,
+            PropertyId::PlaceholderText,
             PropertyId::TextWrapping,
         ]
     );

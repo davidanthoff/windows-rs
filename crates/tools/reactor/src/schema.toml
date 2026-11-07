@@ -197,6 +197,11 @@ name = "TextBox"
 enabled = true
 focus = true
 
+# Properties apply in declaration order. AcceptsReturn precedes Text because WinUI keeps only
+# the first line of text set while AcceptsReturn is false.
+[[objects.properties]]
+name = "AcceptsReturn"
+
 [[objects.properties]]
 name = "Text"
 adapter = "edit_text"
@@ -204,9 +209,6 @@ controlled = "TextChanged"
 
 [[objects.properties]]
 name = "PlaceholderText"
-
-[[objects.properties]]
-name = "AcceptsReturn"
 
 [[objects.properties]]
 name = "IsReadOnly"

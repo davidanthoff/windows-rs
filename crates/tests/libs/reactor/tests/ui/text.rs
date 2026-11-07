@@ -69,3 +69,18 @@ fn settled(ui: &Automation, expected: &str) -> Result<()> {
     ui.name("echo", expected)?;
     ui.name_stays("echo", expected, Duration::from_millis(250))
 }
+
+/// A TextBox that accepts returns keeps every line of the text it is declared with, both when it
+/// is created that way and when it becomes multi-line in the same update as its text. WinUI keeps
+/// only the first line of text set while `AcceptsReturn` is false, so the order in which Reactor
+/// applies the two properties matters.
+#[test]
+fn multiline_text_box_keeps_every_line() -> Result<()> {
+    process::run("text-multiline", |ui| {
+        ui.value("initial", "First line\rSecond line")?;
+        ui.value("expanding", "One line")?;
+        ui.invoke("expand")?;
+        ui.value("expanding", "First line\rSecond line")?;
+        ui.name_stays("echo", "Changes 0", Duration::from_millis(250))
+    })
+}

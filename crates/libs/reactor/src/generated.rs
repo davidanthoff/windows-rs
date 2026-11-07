@@ -1216,6 +1216,10 @@ pub fn property_contract(kind: ObjectType, id: PropertyId) -> Option<PropertyCon
                 ],
             },
         }),
+        (ObjectType::TextBox, PropertyId::AcceptsReturn) => Some(PropertyContract {
+            id,
+            value: ValueType::Bool,
+        }),
         (ObjectType::TextBox, PropertyId::Text) => Some(PropertyContract {
             id,
             value: ValueType::String,
@@ -1223,10 +1227,6 @@ pub fn property_contract(kind: ObjectType, id: PropertyId) -> Option<PropertyCon
         (ObjectType::TextBox, PropertyId::PlaceholderText) => Some(PropertyContract {
             id,
             value: ValueType::String,
-        }),
-        (ObjectType::TextBox, PropertyId::AcceptsReturn) => Some(PropertyContract {
-            id,
-            value: ValueType::Bool,
         }),
         (ObjectType::TextBox, PropertyId::IsReadOnly) => Some(PropertyContract {
             id,
@@ -2487,9 +2487,9 @@ pub(crate) fn property_order(kind: ObjectType, id: PropertyId) -> usize {
         (ObjectType::TextBlock, PropertyId::TextTrimming) => 39,
         (ObjectType::TextBlock, PropertyId::MaxLines) => 40,
         (ObjectType::TextBlock, PropertyId::TextAlignment) => 41,
-        (ObjectType::TextBox, PropertyId::Text) => 29,
-        (ObjectType::TextBox, PropertyId::PlaceholderText) => 30,
-        (ObjectType::TextBox, PropertyId::AcceptsReturn) => 31,
+        (ObjectType::TextBox, PropertyId::AcceptsReturn) => 29,
+        (ObjectType::TextBox, PropertyId::Text) => 30,
+        (ObjectType::TextBox, PropertyId::PlaceholderText) => 31,
         (ObjectType::TextBox, PropertyId::IsReadOnly) => 32,
         (ObjectType::TextBox, PropertyId::TextAlignment) => 33,
         (ObjectType::TextBox, PropertyId::TextWrapping) => 34,

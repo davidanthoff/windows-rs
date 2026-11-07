@@ -382,6 +382,7 @@ pub fn run(fixture: &str) -> windows_core::Result<()> {
         "rich-transform" => {
             App::run_component::<text::TransformFixture>(text::TextControl::Rich)?;
         }
+        "text-multiline" => App::run_component::<text::MultilineFixture>(())?,
         "typography" => App::run_component::<typography::TypographyFixture>(())?,
         "typography-inherited" => {
             App::run_component::<typography::InheritedTypographyFixture>(())?;

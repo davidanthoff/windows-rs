@@ -99,3 +99,65 @@ impl Component for TransformFixture {
         )
     }
 }
+
+pub(super) const MULTILINE_TEXT: &str = "First line\rSecond line";
+
+/// One TextBox declared multi-line with its text, and one that becomes multi-line in the same
+/// update in which its text gains a second line. The echo counts the text changes the app is
+/// told about: setting declared text must not report any.
+pub(super) struct MultilineFixture {
+    expanded: bool,
+    changes: u32,
+}
+
+#[derive(Clone)]
+pub(super) enum MultilineMessage {
+    Changed,
+    Expand,
+}
+
+impl Component for MultilineFixture {
+    type Input = ();
+    type Message = MultilineMessage;
+
+    fn create(_: &(), _: &ComponentContext<Self>) -> Self {
+        Self {
+            expanded: false,
+            changes: 0,
+        }
+    }
+
+    fn update(&mut self, message: MultilineMessage, _: &ComponentContext<Self>) {
+        match message {
+            MultilineMessage::Changed => self.changes += 1,
+            MultilineMessage::Expand => self.expanded = true,
+        }
+    }
+
+    fn view(&self, _: &(), context: &mut ViewContext<Self>) -> View {
+        let expanding = TextBox::new().automation_id("expanding");
+        let expanding = if self.expanded {
+            expanding.text(MULTILINE_TEXT).accepts_return(true)
+        } else {
+            expanding.text("One line")
+        };
+        context.window_frame(
+            "Reactor UI fixture: text-multiline",
+            StackPanel::new().margin(20.0).spacing(12.0).children((
+                TextBox::new()
+                    .automation_id("initial")
+                    .text(MULTILINE_TEXT)
+                    .accepts_return(true)
+                    .on_text_changed(context.callback(|_: Rc<str>| MultilineMessage::Changed)),
+                expanding.on_text_changed(context.callback(|_: Rc<str>| MultilineMessage::Changed)),
+                TextBlock::new()
+                    .automation_id("echo")
+                    .text(format!("Changes {}", self.changes)),
+                Button::new()
+                    .automation_id("expand")
+                    .content("Expand")
+                    .on_click(context.message(MultilineMessage::Expand)),
+            )),
+        )
+    }
+}

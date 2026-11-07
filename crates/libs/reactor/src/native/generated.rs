@@ -2899,11 +2899,11 @@ impl GeneratedHandle {
             (ObjectType::TextBlock, PropertyId::TextAlignment) => {
                 (native::TextBlock::TextAlignmentProperty, Conversion::Value)
             }
-            (ObjectType::TextBox, PropertyId::PlaceholderText) => {
-                (native::TextBox::PlaceholderTextProperty, Conversion::Value)
-            }
             (ObjectType::TextBox, PropertyId::AcceptsReturn) => {
                 (native::TextBox::AcceptsReturnProperty, Conversion::Value)
+            }
+            (ObjectType::TextBox, PropertyId::PlaceholderText) => {
+                (native::TextBox::PlaceholderTextProperty, Conversion::Value)
             }
             (ObjectType::TextBox, PropertyId::IsReadOnly) => {
                 (native::TextBox::IsReadOnlyProperty, Conversion::Value)
