@@ -151,6 +151,19 @@ fn main() {
             "WM_GETICON",
             "ICON_BIG",
             "ICON_SMALL",
+            "CreateProcessW",
+            "STARTF_USESHOWWINDOW",
+            "WaitForSingleObject",
+            "WAIT_OBJECT_0",
+            "INFINITE",
+            "GetExitCodeProcess",
+            "TerminateProcess",
+            "IsIconic",
+            "IsZoomed",
+            "ShowWindow",
+            "SW_SHOWMINNOACTIVE",
+            "SW_SHOWMAXIMIZED",
+            "SW_RESTORE",
         ])
         .flat()
         .minimal()

@@ -159,6 +159,44 @@ fn drag_title_bar_slider(ui: &Automation) -> Result<()> {
     Ok(())
 }
 
+/// A launcher can ask for the first window to start minimized without taking the foreground, as
+/// `start /min` and shortcuts set to run minimized do. Restoring it brings back its declared
+/// initial placement.
+#[test]
+fn startup_request_opens_first_window_minimized_without_activation() -> Result<()> {
+    process::run_with_show("window-placement", SW_SHOWMINNOACTIVE, |ui| {
+        let window = ui.window_handle()? as HWND;
+        ui.wait(
+            "window shown minimized",
+            || Ok(unsafe { IsIconic(window) }.as_bool()),
+            |&iconic| iconic,
+        )?;
+        assert_ne!(
+            unsafe { GetForegroundWindow() },
+            window,
+            "minimized window took the foreground"
+        );
+        unsafe { _ = ShowWindow(window, SW_RESTORE) };
+        ui.window_bounds(80, 100, 640, 480)?;
+        ui.name("placement", "Placement 80 100; 640 x 480; maximized false")?;
+        Ok(())
+    })
+}
+
+/// A launcher can ask for the first window to start maximized, as shortcuts set to run maximized do.
+#[test]
+fn startup_request_opens_first_window_maximized() -> Result<()> {
+    process::run_with_show("window-placement", SW_SHOWMAXIMIZED, |ui| {
+        let window = ui.window_handle()? as HWND;
+        ui.name("placement", "Placement 80 100; 640 x 480; maximized true")?;
+        assert!(
+            unsafe { IsZoomed(window) }.as_bool(),
+            "window is not maximized"
+        );
+        Ok(())
+    })
+}
+
 #[test]
 fn initial_window_placement_and_native_updates() -> Result<()> {
     process::run("window-placement", |ui| {

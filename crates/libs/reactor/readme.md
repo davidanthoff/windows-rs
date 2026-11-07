@@ -121,7 +121,9 @@ Updates and rendering run on the UI thread, so keep `update` and `view` quick.
 ## Ship the app
 
 Add `#![windows_subsystem = "windows"]` to hide the console window; leave it visible while
-diagnosing startup. For a self-contained app, use
+diagnosing startup. The first window opens minimized or maximized when the program that starts
+the app asks for that, as `start /min` and shortcuts set to run minimized or maximized do; a
+minimized start does not take the foreground unless asked to. For a self-contained app, use
 [windows-reactor-setup](https://docs.rs/windows-reactor-setup) from `build.rs` and distribute the
 staged runtime files alongside the executable.
 

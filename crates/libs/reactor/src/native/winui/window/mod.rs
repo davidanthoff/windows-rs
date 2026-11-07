@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) mod placement;
+mod startup;
 
 /// Advanced native window handle.
 ///
@@ -332,6 +333,26 @@ impl NativeWindow {
     }
 
     pub fn activate(&self) -> Result<(), WinUiError> {
+        // The application's first window shows as the program that started the process asked.
+        let startup = if self.state.shown.get() {
+            None
+        } else {
+            startup::take()
+        };
+        match startup {
+            Some(startup::StartupShow::Minimized { activate }) => {
+                // Restoring the window brings back a maximized initial placement.
+                placement::show_minimized(
+                    self.raw_handle()?.cast(),
+                    activate,
+                    self.state.maximize_on_first_show.replace(false),
+                )?;
+                self.state.shown.set(true);
+                return Ok(());
+            }
+            Some(startup::StartupShow::Maximized) => self.state.maximize_on_first_show.set(true),
+            None => {}
+        }
         if self.state.maximize_on_first_show.replace(false) {
             placement::show_maximized(self.raw_handle()?.cast())?;
         }

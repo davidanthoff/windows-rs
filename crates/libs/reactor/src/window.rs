@@ -141,6 +141,9 @@ impl WindowVisuals {
     /// Load saved placement before opening the window, not from a later asynchronous update.
     /// Windows adjusts fully off-screen bounds to an available monitor. Size constraints still
     /// apply. Width and height must be positive, with representable right and bottom coordinates.
+    ///
+    /// When the program that starts the application asks for its first window to be minimized,
+    /// for example with `start /min`, that window opens minimized and restores to this placement.
     pub fn initial_placement(mut self, placement: WindowPlacement) -> Self {
         placement.validate();
         self.initial_placement = Some(placement);

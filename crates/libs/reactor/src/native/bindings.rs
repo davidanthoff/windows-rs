@@ -6,6 +6,7 @@ windows_core::link!("user32.dll" "system" fn GetDpiForWindow(hwnd : HWND) -> UIN
 windows_core::link!("user32.dll" "system" fn GetKeyboardState(lpkeystate : PBYTE) -> windows_core::BOOL);
 windows_core::link!("user32.dll" "system" fn GetMonitorInfoW(hmonitor : HMONITOR, lpmi : LPMONITORINFO) -> windows_core::BOOL);
 windows_core::link!("kernel32.dll" "system" fn GetProcessHeap() -> HANDLE);
+windows_core::link!("kernel32.dll" "system" fn GetStartupInfoW(lpstartupinfo : LPSTARTUPINFOW));
 windows_core::link!("user32.dll" "system" fn GetWindowLongW(hwnd : HWND, nindex : i32) -> LONG);
 windows_core::link!("user32.dll" "system" fn GetWindowPlacement(hwnd : HWND, lpwndpl : *mut WINDOWPLACEMENT) -> windows_core::BOOL);
 windows_core::link!("kernel32.dll" "system" fn HeapFree(hheap : HANDLE, dwflags : DWORD, lpmem : LPVOID) -> windows_core::BOOL);
@@ -22748,9 +22749,11 @@ impl windows_core::RuntimeType for KeyboardAcceleratorPlacementMode {
 }
 pub type LONG = i32;
 pub type LPARAM = isize;
+pub type LPBYTE = *mut u8;
 pub type LPCRECT = *const RECT;
 pub type LPDWORD = *mut u32;
 pub type LPMONITORINFO = *mut MONITORINFO;
+pub type LPSTARTUPINFOW = *mut STARTUPINFOW;
 pub type LPVOID = *mut core::ffi::c_void;
 pub type LRESULT = isize;
 pub type LSTATUS = i32;
@@ -26562,15 +26565,41 @@ impl windows_core::RuntimeName for Run {
 }
 unsafe impl Send for Run {}
 unsafe impl Sync for Run {}
+pub const STARTF_USESHOWWINDOW: i32 = 1;
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct STARTUPINFOW {
+    pub cb: DWORD,
+    pub lpReserved: windows_core::PWSTR,
+    pub lpDesktop: windows_core::PWSTR,
+    pub lpTitle: windows_core::PWSTR,
+    pub dwX: DWORD,
+    pub dwY: DWORD,
+    pub dwXSize: DWORD,
+    pub dwYSize: DWORD,
+    pub dwXCountChars: DWORD,
+    pub dwYCountChars: DWORD,
+    pub dwFillAttribute: DWORD,
+    pub dwFlags: DWORD,
+    pub wShowWindow: WORD,
+    pub cbReserved2: WORD,
+    pub lpReserved2: LPBYTE,
+    pub hStdInput: HANDLE,
+    pub hStdOutput: HANDLE,
+    pub hStdError: HANDLE,
+}
 pub const STATEREPOSITORY_E_DEPENDENCY_NOT_RESOLVED: windows_core::HRESULT =
     windows_core::HRESULT(0x80670016_u32 as _);
 pub const SWP_NOACTIVATE: i32 = 16;
 pub const SWP_NOSIZE: i32 = 1;
 pub const SWP_NOZORDER: i32 = 4;
+pub const SW_FORCEMINIMIZE: i32 = 11;
 pub const SW_HIDE: i32 = 0;
+pub const SW_MINIMIZE: i32 = 6;
 pub const SW_RESTORE: i32 = 9;
 pub const SW_SHOWMAXIMIZED: i32 = 3;
 pub const SW_SHOWMINIMIZED: i32 = 2;
+pub const SW_SHOWMINNOACTIVE: i32 = 7;
 pub const SW_SHOWNORMAL: i32 = 1;
 #[repr(transparent)]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30961,7 +30990,9 @@ pub struct WINDOWPLACEMENT {
 pub const WM_SETICON: i32 = 128;
 pub const WM_SETTINGCHANGE: i32 = 26;
 pub const WM_THEMECHANGED: i32 = 794;
+pub type WORD = u16;
 pub type WPARAM = usize;
+pub const WPF_RESTORETOMAXIMIZED: i32 = 2;
 pub const WS_EX_LAYERED: i32 = 524288;
 pub const WS_EX_TOOLWINDOW: i32 = 128;
 pub const WS_EX_TOPMOST: i32 = 8;

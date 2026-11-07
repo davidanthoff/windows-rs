@@ -134,3 +134,23 @@ pub(super) fn show_maximized(hwnd: native::HWND) -> windows_core::Result<()> {
     placement.showCmd = native::SW_SHOWMAXIMIZED as u32;
     unsafe { native::SetWindowPlacement(hwnd, &placement).ok() }
 }
+
+/// Shows the window minimized, activating it only when asked. With `restore_maximized`, restoring
+/// the window maximizes it.
+pub(super) fn show_minimized(
+    hwnd: native::HWND,
+    activate: bool,
+    restore_maximized: bool,
+) -> windows_core::Result<()> {
+    let _coordinates = PhysicalCoordinates::enter()?;
+    let mut placement = native_placement(hwnd)?;
+    placement.showCmd = if activate {
+        native::SW_SHOWMINIMIZED
+    } else {
+        native::SW_SHOWMINNOACTIVE
+    } as u32;
+    if restore_maximized {
+        placement.flags |= native::WPF_RESTORETOMAXIMIZED as u32;
+    }
+    unsafe { native::SetWindowPlacement(hwnd, &placement).ok() }
+}

@@ -1,13 +1,117 @@
 use super::*;
 use std::fs::{self, File};
+use std::os::windows::process::ExitStatusExt;
 use std::path::PathBuf;
-use std::process::{Child, Command, ExitStatus, Stdio};
+use std::process::{Command, ExitStatus, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 static SERIAL: Mutex<()> = Mutex::new(());
 static NEXT_LOG: AtomicU32 = AtomicU32::new(0);
+
+/// A fixture process. `std::process::Command` cannot yet set the show command that a launcher
+/// passes in `STARTUPINFO` (as `start /min` and shortcuts set to run minimized do), so fixtures
+/// that need one are started through `CreateProcessW`.
+enum Child {
+    Std(std::process::Child),
+    Shown(ShownChild),
+}
+
+impl Child {
+    fn id(&self) -> u32 {
+        match self {
+            Self::Std(child) => child.id(),
+            Self::Shown(child) => child.id,
+        }
+    }
+
+    fn try_wait(&mut self) -> std::io::Result<Option<ExitStatus>> {
+        match self {
+            Self::Std(child) => child.try_wait(),
+            Self::Shown(child) => child.wait_for(0),
+        }
+    }
+
+    fn kill(&mut self) -> std::io::Result<()> {
+        match self {
+            Self::Std(child) => child.kill(),
+            Self::Shown(child) => unsafe {
+                if !TerminateProcess(child.process, 1).as_bool() {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            },
+        }
+    }
+
+    fn wait(&mut self) -> std::io::Result<ExitStatus> {
+        match self {
+            Self::Std(child) => child.wait(),
+            Self::Shown(child) => Ok(child.wait_for(INFINITE)?.unwrap()),
+        }
+    }
+}
+
+struct ShownChild {
+    process: HANDLE,
+    id: u32,
+}
+
+impl ShownChild {
+    fn spawn(fixture: &str, show: i32) -> Result<Self> {
+        let mut command: Vec<u16> = format!("\"{}\" {fixture}", env!("CARGO_BIN_EXE_test-reactor"))
+            .encode_utf16()
+            .chain([0])
+            .collect();
+        let mut startup = STARTUPINFOW {
+            cb: size_of::<STARTUPINFOW>() as u32,
+            dwFlags: STARTF_USESHOWWINDOW as u32,
+            wShowWindow: show as u16,
+            ..Default::default()
+        };
+        let mut process = PROCESS_INFORMATION::default();
+        unsafe {
+            CreateProcessW(
+                windows_core::PCWSTR::null(),
+                windows_core::PWSTR(command.as_mut_ptr()),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                false.into(),
+                0,
+                std::ptr::null_mut(),
+                windows_core::PCWSTR::null(),
+                &mut startup,
+                &mut process,
+            )
+            .ok()?;
+            _ = CloseHandle(process.hThread);
+        }
+        Ok(Self {
+            process: process.hProcess,
+            id: process.dwProcessId,
+        })
+    }
+
+    fn wait_for(&self, milliseconds: u32) -> std::io::Result<Option<ExitStatus>> {
+        unsafe {
+            if WaitForSingleObject(self.process, milliseconds) != WAIT_OBJECT_0.0 as u32 {
+                return Ok(None);
+            }
+            let mut code = 0;
+            if !GetExitCodeProcess(self.process, &mut code).as_bool() {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(Some(ExitStatus::from_raw(code)))
+        }
+    }
+}
+
+impl Drop for ShownChild {
+    fn drop(&mut self) {
+        unsafe { _ = CloseHandle(self.process) };
+    }
+}
 
 struct Host {
     child: Child,
@@ -16,7 +120,35 @@ struct Host {
 
 impl Host {
     fn spawn(fixture: &str) -> Result<Self> {
-        let directory = loop {
+        let directory = Self::log_directory()?;
+        let child = Command::new(env!("CARGO_BIN_EXE_test-reactor"))
+            .arg(fixture)
+            .stdin(Stdio::null())
+            .stdout(File::create(directory.join("stdout.txt"))?)
+            .stderr(File::create(directory.join("stderr.txt"))?)
+            .spawn()?;
+        eprintln!("fixture {fixture}: pid {}", child.id());
+        Ok(Self {
+            child: Child::Std(child),
+            directory,
+        })
+    }
+
+    /// Starts the fixture as a launcher that asks for `show` does. Its output is not captured.
+    fn spawn_shown(fixture: &str, show: i32) -> Result<Self> {
+        let directory = Self::log_directory()?;
+        File::create(directory.join("stdout.txt"))?;
+        File::create(directory.join("stderr.txt"))?;
+        let child = ShownChild::spawn(fixture, show)?;
+        eprintln!("fixture {fixture} (show {show}): pid {}", child.id);
+        Ok(Self {
+            child: Child::Shown(child),
+            directory,
+        })
+    }
+
+    fn log_directory() -> Result<PathBuf> {
+        Ok(loop {
             let directory = std::env::temp_dir().join(format!(
                 "reactor-ui-{}-{}",
                 std::process::id(),
@@ -27,15 +159,7 @@ impl Host {
                 Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
                 Err(error) => return Err(error.into()),
             }
-        };
-        let child = Command::new(env!("CARGO_BIN_EXE_test-reactor"))
-            .arg(fixture)
-            .stdin(Stdio::null())
-            .stdout(File::create(directory.join("stdout.txt"))?)
-            .stderr(File::create(directory.join("stderr.txt"))?)
-            .spawn()?;
-        eprintln!("fixture {fixture}: pid {}", child.id());
-        Ok(Self { child, directory })
+        })
     }
 
     fn wait(&mut self, deadline: Instant) -> Result<ExitStatus> {
@@ -95,7 +219,25 @@ impl Drop for Host {
 pub fn run(fixture: &'static str, test: fn(&Automation) -> Result<()>) -> Result<()> {
     // Serialize this suite even when Cargo uses its default test-thread count.
     let _serial = SERIAL.lock().unwrap();
-    let mut host = Host::spawn(fixture)?;
+    run_host(Host::spawn(fixture)?, fixture, test)
+}
+
+/// Like [`run`], with the fixture started as a launcher that asks for the `SW_` show command
+/// `show` starts it, for example `start /min`.
+pub fn run_with_show(
+    fixture: &'static str,
+    show: i32,
+    test: fn(&Automation) -> Result<()>,
+) -> Result<()> {
+    let _serial = SERIAL.lock().unwrap();
+    run_host(Host::spawn_shown(fixture, show)?, fixture, test)
+}
+
+fn run_host(
+    mut host: Host,
+    fixture: &'static str,
+    test: fn(&Automation) -> Result<()>,
+) -> Result<()> {
     match drive(&mut host, fixture, test) {
         Ok(()) => host.remove_logs(),
         Err(error) => {
