@@ -28,6 +28,7 @@ pub(super) struct NativeWindowState {
     shown: Cell<bool>,
     closed: Cell<bool>,
     maximize_on_first_show: Cell<bool>,
+    open_in_background: Cell<bool>,
     placement_callback: RefCell<Option<Rc<dyn Fn(WindowPlacement)>>>,
     last_placement: Cell<Option<WindowPlacement>>,
     initial_focus: RefCell<Option<windows_core::EventRevoker>>,
@@ -378,6 +379,16 @@ impl NativeWindow {
     }
 
     pub fn activate(&self) -> Result<(), WinUiError> {
+        if self.state.open_in_background.replace(false) {
+            // Shown minimized and inactive instead; a maximized placement still applies at the
+            // first real activation.
+            unsafe {
+                _ = native::ShowWindow(self.raw_handle()?.cast(), native::SW_SHOWMINNOACTIVE);
+            }
+            self.state.shown.set(true);
+            self.state.observe_placement()?;
+            return Ok(());
+        }
         if self.state.maximize_on_first_show.replace(false) {
             placement::show_maximized(self.raw_handle()?.cast())?;
         }
@@ -556,6 +567,7 @@ impl WinUiAdapter {
             shown: Cell::new(false),
             closed: Cell::new(false),
             maximize_on_first_show: Cell::new(false),
+            open_in_background: Cell::new(policy.open_in_background),
             placement_callback: RefCell::new(None),
             last_placement: Cell::new(None),
             initial_focus: RefCell::new(None),
