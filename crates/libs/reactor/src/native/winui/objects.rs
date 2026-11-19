@@ -16,11 +16,6 @@ impl WinUiAdapter {
         }
         let handle = if let Some(handle) = GeneratedHandle::create(kind, object, &self.event_queue)?
         {
-            if let GeneratedHandle::ListView(list) = &handle {
-                list.value
-                    .cast::<native::IItemsControl>()?
-                    .SetItemTemplate(&self.list_template()?)?;
-            }
             Handle::Generated(handle)
         } else {
             match kind {
@@ -74,15 +69,13 @@ impl WinUiAdapter {
                     })
                 }
                 ObjectType::DataItem => {
-                    let values = BTreeMap::from([
-                        (self.data_text_key.clone(), Some(data_string(""))),
-                        (self.data_content_key.clone(), None),
-                        (
-                            self.data_text_visibility_key.clone(),
-                            Some(data_string("Visible")),
-                        ),
-                    ]);
-                    Handle::Data(values.into())
+                    let value = native::ListViewItem::new()?.cast::<native::IContentControl>()?;
+                    value.SetContent(&data_string(""))?;
+                    Handle::Data(NativeDataItem {
+                        value,
+                        text: HSTRING::new(),
+                        content: None,
+                    })
                 }
                 _ => unreachable!("generated object was not created"),
             }

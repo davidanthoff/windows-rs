@@ -101,7 +101,7 @@ Microsoft::UI::Xaml::Controls::IImageIconSource::put_ImageSource
 Microsoft::UI::Xaml::Controls::IInfoBar::{add_Closed, get_IsOpen, remove_Closed}
 Microsoft::UI::Xaml::Controls::IInfoBarClosedEventArgs::get_Reason
 Microsoft::UI::Xaml::Controls::IItemContainer::get_IsSelected
-Microsoft::UI::Xaml::Controls::IItemsControl::{get_Items, put_ItemTemplate}
+Microsoft::UI::Xaml::Controls::IItemsControl::get_Items
 Microsoft::UI::Xaml::Controls::IItemsRepeater::{put_ItemsSource, put_ItemTemplate}
 Microsoft::UI::Xaml::Controls::IKeyIndexMapping::{}
 Microsoft::UI::Xaml::Controls::IListViewBase::{add_DragItemsCompleted, remove_DragItemsCompleted}

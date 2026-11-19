@@ -32,7 +32,15 @@ enum Handle {
     Generated(GeneratedHandle),
     TreeView(NativeTreeView),
     TreeNode(NativeTreeNode),
-    Data(IObservableMap<HSTRING, IInspectable>),
+    Data(NativeDataItem),
+}
+
+/// A `ListView` row. Each row is its own `ListViewItem` container, so WinUI never recycles a
+/// container between rows and a row's content element is never needed by two containers at once.
+struct NativeDataItem {
+    value: native::IContentControl,
+    text: HSTRING,
+    content: Option<ObjectId>,
 }
 
 struct NativeTreeView {
@@ -557,10 +565,6 @@ pub struct WinUiAdapter {
     apply_depth: usize,
     live_regions: HashSet<ObjectId>,
     tree_template: Option<native::DataTemplate>,
-    list_template: Option<native::DataTemplate>,
-    data_content_key: HSTRING,
-    data_text_key: HSTRING,
-    data_text_visibility_key: HSTRING,
     event_queue: Rc<NativeEventQueue>,
     virtual_items: HashMap<ObjectId, NativeVirtualItems>,
     observations: HashMap<(ObjectId, u64), ObservationSubscription>,
@@ -595,10 +599,6 @@ impl Default for WinUiAdapter {
             apply_depth: 0,
             live_regions: HashSet::new(),
             tree_template: None,
-            list_template: None,
-            data_content_key: HSTRING::from("Content"),
-            data_text_key: HSTRING::from("Text"),
-            data_text_visibility_key: HSTRING::from("TextVisibility"),
             event_queue: Rc::new(NativeEventQueue::default()),
             virtual_items: HashMap::new(),
             observations: HashMap::new(),

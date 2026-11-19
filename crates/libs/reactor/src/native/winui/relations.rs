@@ -17,7 +17,6 @@ impl WinUiAdapter {
             return Err(WinUiError::InvalidObject(child));
         }
         let child_element = self.ui_element(child)?;
-        let data_content_key = self.data_content_key.clone();
         match (self.handle(parent)?, relation) {
             (Handle::Generated(value), relation) => {
                 value
@@ -29,9 +28,8 @@ impl WinUiAdapter {
                 parent.content = Some(child);
             }
             (Handle::Data(parent), RelationId::Content) => {
-                let properties = parent.cast::<IMap<HSTRING, IInspectable>>()?;
-                properties.Insert(&data_content_key, &child_element)?;
-                properties.Insert(&self.data_text_visibility_key, &data_string("Collapsed"))?;
+                parent.value.SetContent(&child_element)?;
+                parent.content = Some(child);
             }
             _ => return Err(WinUiError::InvalidRelation(parent, relation)),
         }
@@ -48,7 +46,6 @@ impl WinUiAdapter {
         if self.owners.get(&child) != Some(&(parent, relation)) {
             return Err(WinUiError::ChildNotFound(child));
         }
-        let data_content_key = self.data_content_key.clone();
         match (self.handle(parent)?, relation) {
             (Handle::Generated(value), relation) => {
                 value
@@ -62,9 +59,10 @@ impl WinUiAdapter {
                 parent.content = None;
             }
             (Handle::Data(parent), RelationId::Content) => {
-                let properties = parent.cast::<IMap<HSTRING, IInspectable>>()?;
-                properties.Insert(&data_content_key, None)?;
-                properties.Insert(&self.data_text_visibility_key, &data_string("Visible"))?;
+                let content: IInspectable =
+                    windows_reference::IReference::from(parent.text.clone()).into();
+                parent.value.SetContent(&content)?;
+                parent.content = None;
             }
             _ => return Err(WinUiError::InvalidRelation(parent, relation)),
         }
@@ -454,26 +452,34 @@ impl WinUiAdapter {
         }
     }
 
-    /// Replaces a data item's native object before Reactor moves it within `Items`. WinUI keeps the
-    /// removed entry's container bound to the old object until its next layout pass, and a
-    /// selection write in the same batch can prepare a container for the moved item first. The old
-    /// object releases its content so the two containers never claim the same element.
+    /// Replaces a data item's `ListViewItem` before Reactor moves it within `Items`. WinUI keeps
+    /// the removed item in its panel until the next layout pass, and a selection write in the same
+    /// batch can realize the moved item first. The old item releases its content so the two items
+    /// never claim the same element.
     fn reissue_data_item(&mut self, object: ObjectId) -> Result<IInspectable, WinUiError> {
         let Some(Handle::Data(previous)) = self.handles.get(&object) else {
             return Err(WinUiError::InvalidObject(object));
         };
-        let previous = previous.clone();
-        let values = previous
-            .First()?
-            .map(|pair| Ok((pair.Key()?, pair.Value().ok())))
-            .collect::<Result<BTreeMap<_, _>, WinUiError>>()?;
-        previous.Insert(&self.data_content_key, None)?;
-        let value: IObservableMap<HSTRING, IInspectable> = values.into();
-        let inspectable: IInspectable = value.clone().into();
+        let text = previous.text.clone();
+        let content = previous.content;
+        previous.value.SetContent(None::<&IInspectable>)?;
+        let value = native::ListViewItem::new()?.cast::<native::IContentControl>()?;
+        match content {
+            Some(child) => value.SetContent(&self.ui_element(child)?)?,
+            None => value.SetContent(&data_string(&text.to_string_lossy()))?,
+        }
+        let inspectable: IInspectable = value.cast()?;
         if let Some(item) = self.event_queue.items.borrow_mut().get_mut(&object) {
             item.identity = com_identity(&inspectable)?;
         }
-        self.handles.insert(object, Handle::Data(value));
+        self.handles.insert(
+            object,
+            Handle::Data(NativeDataItem {
+                value,
+                text,
+                content,
+            }),
+        );
         Ok(inspectable)
     }
 
@@ -483,7 +489,7 @@ impl WinUiAdapter {
             .get(&object)
             .ok_or(WinUiError::MissingObject(object))?
         {
-            Handle::Data(value) => Ok(value.clone().into()),
+            Handle::Data(value) => Ok(value.value.cast()?),
             _ => Err(WinUiError::InvalidObject(object)),
         }
     }
@@ -542,12 +548,13 @@ impl WinUiAdapter {
     }
 
     pub(super) fn set_data_text(&mut self, object: ObjectId, text: &str) -> Result<(), WinUiError> {
-        let text_key = self.data_text_key.clone();
         let Handle::Data(value) = self.handle(object)? else {
             return Err(WinUiError::InvalidObject(object));
         };
-        let properties = value.cast::<IMap<HSTRING, IInspectable>>()?;
-        properties.Insert(&text_key, &data_string(text))?;
+        value.text = HSTRING::from(text);
+        if value.content.is_none() {
+            value.value.SetContent(&data_string(text))?;
+        }
         Ok(())
     }
 
@@ -564,24 +571,6 @@ impl WinUiAdapter {
         )?
         .cast::<native::DataTemplate>()?;
         self.tree_template = Some(template.clone());
-        Ok(template)
-    }
-
-    pub(super) fn list_template(&mut self) -> Result<native::DataTemplate, WinUiError> {
-        if let Some(template) = &self.list_template {
-            return Ok(template.clone());
-        }
-        let template = native::XamlReader::Load(
-            "<DataTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'>\
-             <Grid>\
-             <TextBlock HorizontalAlignment='Left' Text='{Binding [Text]}' \
-             Visibility='{Binding [TextVisibility]}'/>\
-             <ContentPresenter Content='{Binding [Content]}'/>\
-             </Grid>\
-             </DataTemplate>",
-        )?
-        .cast::<native::DataTemplate>()?;
-        self.list_template = Some(template.clone());
         Ok(template)
     }
 

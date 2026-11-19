@@ -11553,18 +11553,6 @@ impl IItemsControl {
             .and_then(|| windows_core::imp::Type::from_abi(result__))
         }
     }
-    pub(crate) fn SetItemTemplate<P0>(&self, value: P0) -> windows_core::Result<()>
-    where
-        P0: windows_core::Param<DataTemplate>,
-    {
-        unsafe {
-            (windows_core::Interface::vtable(self).SetItemTemplate)(
-                windows_core::Interface::as_raw(self),
-                value.param().abi(),
-            )
-            .ok()
-        }
-    }
 }
 #[repr(C)]
 pub struct IItemsControl_Vtbl {
@@ -11574,11 +11562,6 @@ pub struct IItemsControl_Vtbl {
     pub Items: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut *mut core::ffi::c_void,
-    ) -> windows_core::HRESULT,
-    ItemTemplate: usize,
-    pub SetItemTemplate: unsafe extern "system" fn(
-        *mut core::ffi::c_void,
-        *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_winrt_interface!(
