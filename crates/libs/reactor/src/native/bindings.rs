@@ -5025,6 +5025,16 @@ impl FrameworkElement {
             .and_then(|| windows_core::imp::Type::from_abi(result__))
         })
     }
+    pub(crate) fn LanguageProperty() -> windows_core::Result<DependencyProperty> {
+        Self::IFrameworkElementStatics(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).LanguageProperty)(
+                windows_core::Interface::as_raw(this),
+                &mut result__,
+            )
+            .and_then(|| windows_core::imp::Type::from_abi(result__))
+        })
+    }
     pub(crate) fn WidthProperty() -> windows_core::Result<DependencyProperty> {
         Self::IFrameworkElementStatics(|this| unsafe {
             let mut result__ = core::mem::zeroed();
@@ -10713,7 +10723,10 @@ pub struct IFrameworkElementStatics_Vtbl {
         *mut core::ffi::c_void,
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
-    LanguageProperty: usize,
+    pub LanguageProperty: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
     ActualWidthProperty: usize,
     ActualHeightProperty: usize,
     pub WidthProperty: unsafe extern "system" fn(

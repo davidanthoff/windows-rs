@@ -2147,6 +2147,13 @@ impl TextBox {
         );
         self
     }
+    pub fn language(mut self, language: impl AsRef<str>) -> Self {
+        self.0 = self.0.property(
+            PropertyId::Language,
+            PropertyValue::String(Rc::from(language.as_ref())),
+        );
+        self
+    }
     pub fn accepts_return(mut self, accepts_return: bool) -> Self {
         self.0 = self.0.property(
             PropertyId::AcceptsReturn,

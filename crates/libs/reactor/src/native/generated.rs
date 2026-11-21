@@ -2905,6 +2905,10 @@ impl GeneratedHandle {
             (ObjectType::TextBox, PropertyId::PlaceholderText) => {
                 (native::TextBox::PlaceholderTextProperty, Conversion::Value)
             }
+            (ObjectType::TextBox, PropertyId::Language) => (
+                native::FrameworkElement::LanguageProperty,
+                Conversion::Value,
+            ),
             (ObjectType::TextBox, PropertyId::AcceptsReturn) => {
                 (native::TextBox::AcceptsReturnProperty, Conversion::Value)
             }

@@ -206,6 +206,9 @@ controlled = "TextChanged"
 name = "PlaceholderText"
 
 [[objects.properties]]
+name = "Language"
+
+[[objects.properties]]
 name = "AcceptsReturn"
 coerces = "Text"
 
